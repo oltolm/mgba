@@ -612,7 +612,10 @@ void PainterGL::create() {
 		if (!painter->m_gl->isValid()) {
 			return;
 		}
-		painter->m_gl->swapBuffers(painter->m_surface);
+		auto window = dynamic_cast<QWindow*>(painter->m_surface);
+		if (!window || window->isExposed()) {
+			painter->m_gl->swapBuffers(painter->m_surface);
+		}
 		painter->makeCurrent();
 
 #if defined(BUILD_GLES2) || defined(BUILD_GLES3)

@@ -239,8 +239,14 @@ endif()
 if(${QT}Multimedia_FOUND)
 	list(APPEND AUDIO_SRC
 		AudioProcessorQt.cpp
-		AudioDevice.cpp
-		VideoDumper.cpp)
+		AudioDevice.cpp)
+	if(TARGET Qt6::Core)
+		list(APPEND SOURCE_FILES
+			VideoDumper6.cpp)
+	else()
+		list(APPEND SOURCE_FILES
+			VideoDumper.cpp)
+	endif()
 	if (WIN32 AND QT_STATIC)
 		list(APPEND QT_LIBRARIES ${QT}::QWindowsAudioPlugin ${QT}::DSServicePlugin ${QT}::QWindowsVistaStylePlugin ${QT}::QJpegPlugin
                                  strmiids mfuuid mfplat mf ksguid dxva2 evr d3d9)

@@ -8,13 +8,10 @@
 #include "AudioProcessor.h"
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
-#include <QAudioOutput>
-#else
-#include <QAudioSink>
-#include <QTimer>
-#endif
-
 class QAudioOutput;
+#else
+class QAudioSink;
+#endif
 
 namespace QGBA {
 
@@ -39,19 +36,13 @@ public slots:
 
 	virtual void requestSampleRate(unsigned) override;
 
+private:
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-private slots:
-	void recheckUnderflow();
-
-private:
-	QTimer m_recheckTimer;
-	std::unique_ptr<QAudioSink> m_audioOutput;
+	QAudioSink* m_audioOutput = nullptr;
 #else
-private:
-	std::unique_ptr<QAudioOutput> m_audioOutput;
+	QAudioOutput* m_audioOutput = nullptr;
 #endif
-	std::unique_ptr<AudioDevice> m_device;
-	size_t m_samples = 1024;
+	AudioDevice* m_device;
 	unsigned m_sampleRate = 44100;
 };
 

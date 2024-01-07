@@ -6,6 +6,7 @@
 #include "AudioDevice.h"
 
 #include "LogController.h"
+#include "mgba/core/sync.h"
 
 #include <mgba/core/core.h>
 #include <mgba/core/thread.h>

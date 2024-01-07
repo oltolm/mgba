@@ -25,13 +25,14 @@
 #include <mgba/gba/interface.h>
 
 #ifdef BUILD_QT_MULTIMEDIA
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include "VideoDumper.h"
-
-#include <QCamera>
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
+#else
+#include "VideoDumper6.h"
+#include <QCameraDevice>
 #include <QMediaCaptureSession>
-#include <QVideoSink>
 #endif
+#include <QCamera>
 #endif
 
 struct mRotationSource;
@@ -153,10 +154,6 @@ private:
 	QSet<QPair<int, GamepadAxisEvent::Direction>> activeGamepadAxes(uint32_t type);
 	QSet<QPair<int, GamepadHatEvent::Direction>> activeGamepadHats(uint32_t type);
 
-#if defined(BUILD_QT_MULTIMEDIA)
-	void prepareCamFormat();
-#endif
-
 	struct InputControllerLux : GBALuminanceSource {
 		InputController* p;
 		uint8_t value;
@@ -175,14 +172,13 @@ private:
 
 #ifdef BUILD_QT_MULTIMEDIA
 	bool m_cameraActive = false;
-	std::unique_ptr<QCamera> m_camera;
-	VideoDumper m_videoDumper;
+	QCamera* m_camera;
+	VideoDumper* m_videoDumper;
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 	QByteArray m_cameraDevice;
 #else
 	QCameraDevice m_cameraDevice;
-	QMediaCaptureSession m_captureSession;
-	QVideoSink m_videoSink;
+	QMediaCaptureSession* m_captureSession;
 #endif
 #endif
 
