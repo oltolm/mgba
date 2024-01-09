@@ -11,6 +11,7 @@
 #include "ShortcutModel.h"
 
 #include <QFontMetrics>
+#include <QKeyCombination>
 #include <QKeyEvent>
 
 using namespace QGBA;
@@ -19,16 +20,16 @@ ShortcutView::ShortcutView(QWidget* parent)
 	: QWidget(parent)
 {
 	m_ui.setupUi(this);
-	m_ui.keyEdit->setValueKey(0);
+	m_ui.keyEdit->setValueKey(QKeyCombination{});
 
 	connect(m_ui.gamepadButton, &QAbstractButton::pressed, [this]() {
 		bool signalsBlocked = m_ui.keyEdit->blockSignals(true);
-		m_ui.keyEdit->setValueButton(-1);
+		m_ui.keyEdit->setValueButton(QKeyCombination{});
 		m_ui.keyEdit->blockSignals(signalsBlocked);
 	});
 	connect(m_ui.keyboardButton, &QAbstractButton::pressed, [this]() {
 		bool signalsBlocked = m_ui.keyEdit->blockSignals(true);
-		m_ui.keyEdit->setValueKey(0);
+		m_ui.keyEdit->setValueKey(QKeyCombination{});
 		m_ui.keyEdit->blockSignals(signalsBlocked);
 	});
 	connect(m_ui.keyEdit, &KeyEditor::valueChanged, this, &ShortcutView::updateButton);
@@ -54,7 +55,7 @@ void ShortcutView::setInputController(InputController* controller) {
 	}
 	m_input = controller;
 	m_input->stealFocus(this);
-	m_ui.keyEdit->setInputController(controller);
+	// m_ui.keyEdit->setInputController(controller);
 }
 
 void ShortcutView::load(const QModelIndex& index) {
@@ -66,7 +67,7 @@ void ShortcutView::load(const QModelIndex& index) {
 	if (!item || !item->action()) {
 		return;
 	}
-	int shortcut = item->shortcut();
+	QKeyCombination shortcut = item->shortcut();
 	if (index.column() == 1) {
 		m_ui.keyboardButton->click();
 	} else if (index.column() == 2) {
@@ -75,7 +76,7 @@ void ShortcutView::load(const QModelIndex& index) {
 	bool blockSignals = m_ui.keyEdit->blockSignals(true);
 	m_ui.keyEdit->setFocus(Qt::MouseFocusReason);
 	if (m_ui.gamepadButton->isChecked()) {
-		m_ui.keyEdit->setValueButton(-1); // There are no default bindings
+		m_ui.keyEdit->setValueButton(QKeyCombination{}); // There are no default bindings
 	} else {
 		m_ui.keyEdit->setValueKey(shortcut);
 	}
@@ -95,10 +96,10 @@ void ShortcutView::clear() {
 	if (m_ui.gamepadButton->isChecked()) {
 		m_controller->clearButton(name);
 		m_controller->clearAxis(name);
-		m_ui.keyEdit->setValueButton(-1);
+		m_ui.keyEdit->setValueButton(QKeyCombination{});
 	} else {
 		m_controller->clearKey(name);
-		m_ui.keyEdit->setValueKey(-1);
+		m_ui.keyEdit->setValueKey(QKeyCombination{});
 	}
 }
 
@@ -114,7 +115,7 @@ void ShortcutView::updateButton(int button) {
 	if (m_ui.gamepadButton->isChecked()) {
 		m_controller->updateButton(name, button);
 	} else {
-		m_controller->updateKey(name, button);
+		m_controller->updateKey(name, QKeyCombination::fromCombined(button));
 	}
 }
 

@@ -7,6 +7,7 @@
 
 #include "ShortcutController.h"
 #include "utils.h"
+#include <QKeyCombination>
 
 using namespace QGBA;
 
@@ -39,7 +40,7 @@ QVariant ShortcutModel::data(const QModelIndex& index, int role) const {
 		if (!shortcut) {
 			return QVariant();
 		}
-		if (shortcut->button() >= 0) {
+		if (shortcut->button() != -1) {
 			return shortcut->button();
 		}
 		if (shortcut->axis() >= 0) {

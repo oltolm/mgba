@@ -12,6 +12,7 @@
 #include "scripting/ScriptingController.h"
 
 #include <QAction>
+#include <QKeyCombination>
 #include <QKeyEvent>
 #include <QMenu>
 #include <QRegularExpression>
@@ -38,7 +39,7 @@ void ShortcutController::setScriptingController(ScriptingController* controller)
 	m_scripting = controller;
 }
 
-void ShortcutController::updateKey(const QString& name, int keySequence) {
+void ShortcutController::updateKey(const QString& name, QKeyCombination keySequence) {
 	auto item = m_items[name];
 	if (!item) {
 		return;
@@ -49,16 +50,16 @@ void ShortcutController::updateKey(const QString& name, int keySequence) {
 	}
 }
 
-void ShortcutController::updateKey(std::shared_ptr<Shortcut> item, int keySequence) {
-	int oldShortcut = item->shortcut();
+void ShortcutController::updateKey(std::shared_ptr<Shortcut> item, QKeyCombination keySequence) {
+	QKeyCombination oldShortcut = item->shortcut();
 	if (oldShortcut != keySequence && m_actions->isHeld(item->name())) {
-		if (oldShortcut > 0) {
+		if (oldShortcut.key() != Qt::Key_unknown) {
 			if (item->action() && item->action()->booleanAction()) {
 				item->action()->booleanAction()(false);
 			}
 			m_heldKeys.take(oldShortcut);
 		}
-		if (keySequence > 0) {
+		if (keySequence.key() != Qt::Key_unknown) {
 			m_heldKeys[keySequence] = item;
 		}
 	}
@@ -72,11 +73,11 @@ void ShortcutController::updateButton(const QString& name, int button) {
 		return;
 	}
 	int oldButton = item->button();
-	if (oldButton >= 0) {
+	if (oldButton != -1) {
 		m_buttons.take(oldButton);
 	}
 	item->setButton(button);
-	if (button >= 0) {
+	if (button != -1) {
 		clearAxis(name);
 		m_buttons[button] = item;
 	}
@@ -119,7 +120,7 @@ void ShortcutController::updateAxis(const QString& name, int axis, GamepadAxisEv
 }
 
 void ShortcutController::clearKey(const QString& name) {
-	updateKey(name, 0);
+	updateKey(name, QKeyCombination{});
 }
 
 void ShortcutController::clearButton(const QString& name) {
@@ -149,12 +150,7 @@ bool ShortcutController::eventFilter(QObject* obj, QEvent* event) {
 		if (keyEvent->isAutoRepeat()) {
 			return false;
 		}
-		int key = keyEvent->key();
-		if (!isModifierKey(key)) {
-			key |= (keyEvent->modifiers() & ~Qt::KeypadModifier);
-		} else {
-			key = toModifierKey(key | (keyEvent->modifiers() & ~Qt::KeypadModifier));
-		}
+		QKeyCombination key = keyEvent->keyCombination();
 		auto item = m_heldKeys.find(key);
 		if (item != m_heldKeys.end()) {
 			Action::BooleanFunction fn = item.value()->action()->booleanAction();
@@ -252,9 +248,11 @@ bool ShortcutController::loadShortcuts(std::shared_ptr<Shortcut> item) {
 	QVariant shortcut = m_config->getQtOption(item->name(), KEY_SECTION);
 	if (!shortcut.isNull()) {
 		if (shortcut.toString().endsWith("+")) {
-			updateKey(item, toModifierShortcut(shortcut.toString()));
+			updateKey(item, QKeyCombination(toModifierShortcut(shortcut.toString())));
 		} else {
-			updateKey(item, QKeySequence(shortcut.toString())[0]);
+			auto sequence = QKeySequence(shortcut.toString());
+			auto combination = sequence[0];
+			updateKey(item, combination);
 		}
 		return true;
 	} else {
@@ -273,7 +271,7 @@ void ShortcutController::loadGamepadShortcuts(std::shared_ptr<Shortcut> item) {
 	}
 	QVariant button = m_config->getQtOption(item->name(), !m_profileName.isNull() ? BUTTON_PROFILE_SECTION + m_profileName : BUTTON_SECTION);
 	int oldButton = item->button();
-	if (oldButton >= 0) {
+	if (oldButton != -1) {
 		m_buttons.take(oldButton);
 		item->setButton(-1);
 	}
@@ -351,10 +349,10 @@ void ShortcutController::onSubitems(const QString& menu, std::function<void(cons
 	}
 }
 
-int ShortcutController::toModifierShortcut(const QString& shortcut) {
+Qt::KeyboardModifiers ShortcutController::toModifierShortcut(const QString& shortcut) {
 	// Qt doesn't seem to work with raw modifier shortcuts!
 	QStringList modifiers = shortcut.split('+');
-	int value = 0;
+	Qt::KeyboardModifiers value;
 	for (const auto& mod : modifiers) {
 		if (mod == QLatin1String("Shift")) {
 			value |= Qt::ShiftModifier;
@@ -374,41 +372,6 @@ int ShortcutController::toModifierShortcut(const QString& shortcut) {
 		}
 	}
 	return value;
-}
-
-bool ShortcutController::isModifierKey(int key) {
-	switch (key) {
-	case Qt::Key_Shift:
-	case Qt::Key_Control:
-	case Qt::Key_Alt:
-	case Qt::Key_Meta:
-		return true;
-	default:
-		return false;
-	}
-}
-
-int ShortcutController::toModifierKey(int key) {
-	int modifiers = key & (Qt::ShiftModifier | Qt::ControlModifier | Qt::AltModifier | Qt::MetaModifier);
-	key ^= modifiers;
-	switch (key) {
-	case Qt::Key_Shift:
-		modifiers |= Qt::ShiftModifier;
-		break;
-	case Qt::Key_Control:
-		modifiers |= Qt::ControlModifier;
-		break;
-	case Qt::Key_Alt:
-		modifiers |= Qt::AltModifier;
-		break;
-	case Qt::Key_Meta:
-		modifiers |= Qt::MetaModifier;
-		break;
-	default:
-		break;
-	}
-	return modifiers;
-
 }
 
 const Shortcut* ShortcutController::shortcut(const QString& action) const {
@@ -467,12 +430,12 @@ Shortcut::Shortcut(std::shared_ptr<Action> action)
 {
 }
 
-void Shortcut::setShortcut(int shortcut) {
+void Shortcut::setShortcut(QKeyCombination shortcut) {
 	if (m_shortcut == shortcut) {
 		return;
 	}
 	m_shortcut = shortcut;
-	emit shortcutChanged(shortcut);
+	emit shortcutChanged(shortcut.toCombined());
 }
 
 void Shortcut::setButton(int button) {

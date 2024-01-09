@@ -6,6 +6,7 @@
 #include "utils.h"
 
 #include <QCoreApplication>
+#include <QKeyCombination>
 #include <QKeySequence>
 #include <QObject>
 
@@ -154,8 +155,8 @@ bool extractMatchingFile(VDir* dir, std::function<QString (VDirEntry*)> filter) 
 	return false;
 }
 
-QString keyName(int key) {
-	switch (key) {
+QString keyName(QKeyCombination key) {
+	switch (key.key()) {
 #ifndef Q_OS_MAC
 	case Qt::Key_Shift:
 		return QCoreApplication::translate("QShortcut", "Shift");
