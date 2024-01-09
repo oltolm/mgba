@@ -8,8 +8,9 @@
 #include <QApplication>
 #include <QComboBox>
 #include <QHBoxLayout>
-#include <QPaintEvent>
+#include <QKeyCombination>
 #include <QPainter>
+#include <QPaintEvent>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -122,7 +123,6 @@ GBAKeyEditor::GBAKeyEditor(InputController* controller, int type, const QString&
 		connect(key, &KeyEditor::valueChanged, this, &GBAKeyEditor::setNext);
 		connect(key, &KeyEditor::axisChanged, this, &GBAKeyEditor::setNext);
 		connect(key, &KeyEditor::hatChanged, this, &GBAKeyEditor::setNext);
-		key->setInputController(m_controller);
 		key->installEventFilter(this);
 	}
 
@@ -268,11 +268,11 @@ void GBAKeyEditor::lookupBinding(const mInputMap* map, KeyEditor* keyEditor, int
 #ifdef BUILD_SDL
 	if (m_type == SDL_BINDING_BUTTON || m_type == SDL_BINDING_CONTROLLER) {
 		int value = mInputQueryBinding(map, m_type, key);
-		keyEditor->setValueButton(value);
+		keyEditor->setValueButton(QKeyCombination::fromCombined(value));
 		return;
 	}
 #endif
-	keyEditor->setValueKey(mInputQueryBinding(map, m_type, key));
+	keyEditor->setValueKey(QKeyCombination::fromCombined(mInputQueryBinding(map, m_type, key)));
 }
 
 #ifdef BUILD_SDL
@@ -337,7 +337,7 @@ void GBAKeyEditor::bindKey(const KeyEditor* keyEditor, int key) {
 		mapper.bindHat(keyEditor->hat(), keyEditor->hatDirection(), key);
 	}
 #endif
-	mapper.bindKey(keyEditor->value(), key);
+	mapper.bindKey(keyEditor->value().toCombined(), key);
 }
 
 bool GBAKeyEditor::findFocus(KeyEditor* needle) {

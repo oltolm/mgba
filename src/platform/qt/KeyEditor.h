@@ -10,10 +10,9 @@
 
 #include <QLineEdit>
 #include <QTimer>
+#include <QKeyCombination>
 
 namespace QGBA {
-
-class InputController;
 
 class KeyEditor : public QLineEdit {
 Q_OBJECT
@@ -21,9 +20,7 @@ Q_OBJECT
 public:
 	KeyEditor(QWidget* parent = nullptr);
 
-	void setInputController(InputController* controller);
-
-	int value() const { return m_key; }
+	QKeyCombination value() const { return m_key; }
 
 	GamepadAxisEvent::Direction direction() const { return m_direction; }
 	int axis() const { return m_axis; }
@@ -34,9 +31,9 @@ public:
 	virtual QSize sizeHint() const override;
 
 public slots:
-	void setValue(int key);
-	void setValueKey(int key);
-	void setValueButton(int button);
+	void setValue(QKeyCombination key);
+	void setValueKey(QKeyCombination key);
+	void setValueButton(QKeyCombination button);
 	void setValueAxis(int axis, GamepadAxisEvent::Direction value);
 	void setValueHat(int hat, GamepadHatEvent::Direction value);
 	void clearButton();
@@ -44,7 +41,7 @@ public slots:
 	void clearHat();
 
 signals:
-	void valueChanged(int key);
+	void valueChanged(QKeyCombination key);
 	void axisChanged(int axis, int direction);
 	void hatChanged(int hat, int direction);
 
@@ -57,11 +54,10 @@ private:
 
 	void updateButtonText();
 
-	int m_key = Qt::Key_unknown;
+	QKeyCombination m_key;
 	int m_axis = -1;
 	int m_hat = -1;
 	bool m_button = false;
-	InputController* m_controller;
 	GamepadAxisEvent::Direction m_direction;
 	GamepadHatEvent::Direction m_hatDirection;
 	QTimer m_lastKey;

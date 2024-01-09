@@ -8,6 +8,7 @@
 #include "ConfigController.h"
 #include "ShortcutController.h"
 
+#include <QKeyCombination>
 #include <QMenu>
 #include <QMenuBar>
 
@@ -73,7 +74,7 @@ void ActionMapper::rebuildMenu(const QString& menu, QMenu* qmenu, QWidget* conte
 		}
 		const Shortcut* shortcut = shortcuts.shortcut(actionName);
 		if (shortcut) {
-			if (shortcut->shortcut() > 0) {
+			if (shortcut->shortcut().key() != Qt::Key_unknown) {
 				qaction->setShortcut(QKeySequence(shortcut->shortcut()));
 			}
 		} else if (!m_defaultShortcuts[actionName].isEmpty()) {

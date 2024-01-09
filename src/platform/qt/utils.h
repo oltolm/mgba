@@ -10,6 +10,7 @@
 #include <mgba-util/vfs.h>
 
 #include <QHostAddress>
+#include <QKeyCombination>
 #include <QRect>
 #include <QSize>
 #include <QString>
@@ -115,6 +116,6 @@ constexpr int saturateCast<int, unsigned>(unsigned value) {
 QString romFilters(bool includeMvl = false, mPlatform platform = mPLATFORM_NONE, bool rawOnly = false);
 bool extractMatchingFile(VDir* dir, std::function<QString (VDirEntry*)> filter);
 
-QString keyName(int key);
+QString keyName(QKeyCombination key);
 
 }

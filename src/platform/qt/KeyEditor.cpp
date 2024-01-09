@@ -5,8 +5,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "KeyEditor.h"
 
-#include "InputController.h"
-#include "input/Gamepad.h"
 #include "input/GamepadAxisEvent.h"
 #include "input/GamepadButtonEvent.h"
 #include "ShortcutController.h"
@@ -14,13 +12,13 @@
 
 #include <QCoreApplication>
 #include <QFontMetrics>
+#include <QKeyCombination>
 #include <QKeyEvent>
 
 using namespace QGBA;
 
 KeyEditor::KeyEditor(QWidget* parent)
 	: QLineEdit(parent)
-	, m_controller(nullptr)
 	, m_direction(GamepadAxisEvent::NEUTRAL)
 	, m_hatDirection(GamepadHatEvent::CENTER)
 {
@@ -29,19 +27,12 @@ KeyEditor::KeyEditor(QWidget* parent)
 	m_lastKey.setSingleShot(true);
 }
 
-void KeyEditor::setInputController(InputController* controller) {
-	m_controller = controller;
-	if (m_button) {
-		updateButtonText();
-	}
-}
-
-void KeyEditor::setValue(int key) {
+void KeyEditor::setValue(QKeyCombination key) {
 	m_key = key;
 	if (m_button) {
 		updateButtonText();
 	} else {
-		if (key == Qt::Key_unknown) {
+		if (key.key() == Qt::Key_unknown) {
 			setText(tr("---"));
 		} else {
 			setText(keyName(key));
@@ -50,12 +41,12 @@ void KeyEditor::setValue(int key) {
 	emit valueChanged(key);
 }
 
-void KeyEditor::setValueKey(int key) {
+void KeyEditor::setValueKey(QKeyCombination key) {
 	m_button = false;
 	setValue(key);
 }
 
-void KeyEditor::setValueButton(int button) {
+void KeyEditor::setValueButton(QKeyCombination button) {
 	m_button = true;
 	setValue(button);
 }
@@ -78,7 +69,7 @@ void KeyEditor::setValueHat(int hat, GamepadHatEvent::Direction direction) {
 
 void KeyEditor::clearButton() {
 	m_button = true;
-	setValue(Qt::Key_unknown);
+	setValue(QKeyCombination{});
 }
 
 void KeyEditor::clearAxis() {
@@ -107,12 +98,10 @@ QSize KeyEditor::sizeHint() const {
 void KeyEditor::keyPressEvent(QKeyEvent* event) {
 	if (!m_button) {
 		if (!m_lastKey.isActive()) {
-			m_key = Qt::Key_unknown;
+			m_key = QKeyCombination{};
 		}
 		m_lastKey.start(KEY_TIME);
-		setValue(ShortcutController::isModifierKey(event->key()) ?
-		             event->key() :
-		             event->key() | (event->modifiers() & ~Qt::KeypadModifier));
+		setValue(event->keyCombination());
 	}
 	event->accept();
 }
@@ -132,7 +121,7 @@ bool KeyEditor::event(QEvent* event) {
 		}
 	} else {
 		if (event->type() == GamepadButtonEvent::Down()) {
-			setValueButton(static_cast<GamepadButtonEvent*>(event)->value());
+			setValueButton(QKeyCombination::fromCombined(static_cast<GamepadButtonEvent*>(event)->value()));
 			event->accept();
 			return true;
 		}
@@ -178,29 +167,11 @@ void KeyEditor::updateButtonText() {
 			break;
 		}
 	}
-	if (m_key != Qt::Key_unknown) {
-		std::shared_ptr<Gamepad> gamepad;
-		if (m_controller && m_controller->gamepadDriver()) {
-			gamepad = m_controller->gamepadDriver()->activeGamepad();
-		}
-		if (!gamepad) {
-			text.append(QString::number(m_key));
-		} else {
-			text.append(gamepad->buttonHumanName(m_key));
-		}
+	if (m_key.key() != Qt::Key_unknown) {
+		text.append(QString::number(m_key.toCombined()));
 	}
 	if (m_direction != GamepadAxisEvent::NEUTRAL) {
-		QString name;
-		std::shared_ptr<Gamepad> gamepad;
-		if (m_controller && m_controller->gamepadDriver()) {
-			gamepad = m_controller->gamepadDriver()->activeGamepad();
-		}
-		if (!gamepad) {
-			name = QString::number(m_axis);
-		} else {
-			name = gamepad->axisHumanName(m_axis);
-		}
-		text.append((m_direction == GamepadAxisEvent::NEGATIVE ? "-" : "+") + name);
+		text.append((m_direction == GamepadAxisEvent::NEGATIVE ? "-" : "+") + QString::number(m_axis));
 	}
 	if (text.isEmpty()) {
 		setText(tr("---"));

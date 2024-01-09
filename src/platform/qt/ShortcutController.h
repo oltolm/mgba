@@ -12,6 +12,7 @@
 #include <QMap>
 #include <QObject>
 #include <QString>
+#include <QKeyCombination>
 
 #include <memory>
 
@@ -31,7 +32,7 @@ public:
 
 	std::shared_ptr<Action> action() { return m_action; }
 	const std::shared_ptr<Action> action() const { return m_action; }
-	int shortcut() const { return m_shortcut; }
+	QKeyCombination shortcut() const { return m_shortcut; }
 	QString visibleName() const { return m_action ? m_action->visibleName() : QString(); }
 	QString name() const { return m_action ? m_action->name() : QString(); }
 	int button() const { return m_button; }
@@ -43,7 +44,7 @@ public:
 	}
 
 public slots:
-	void setShortcut(int sequence);
+	void setShortcut(QKeyCombination sequence);
 	void setButton(int button);
 	void setAxis(int axis, GamepadAxisEvent::Direction direction);
 
@@ -54,8 +55,8 @@ signals:
 
 private:
 	std::shared_ptr<Action> m_action;
-	int m_shortcut = 0;
-	int m_button = -1;
+	QKeyCombination m_shortcut;
+	int m_button;
 	int m_axis = -1;
 	GamepadAxisEvent::Direction m_direction = GamepadAxisEvent::NEUTRAL;
 };
@@ -79,7 +80,7 @@ public:
 
 	void setProfile(const QString& profile);
 
-	void updateKey(const QString& action, int keySequence);
+	void updateKey(const QString& action, QKeyCombination keySequence);
 	void updateButton(const QString& action, int button);
 	void updateAxis(const QString& action, int axis, GamepadAxisEvent::Direction direction);
 
@@ -87,9 +88,7 @@ public:
 	void clearButton(const QString& action);
 	void clearAxis(const QString& action);
 
-	static int toModifierShortcut(const QString& shortcut);
-	static bool isModifierKey(int key);
-	static int toModifierKey(int key);
+	static Qt::KeyboardModifiers toModifierShortcut(const QString& shortcut);
 
 	const Shortcut* shortcut(const QString& action) const;
 	int indexIn(const QString& action) const;
@@ -115,12 +114,12 @@ private:
 	void loadGamepadShortcuts(std::shared_ptr<Shortcut>);
 	void onSubitems(const QString& menu, std::function<void(std::shared_ptr<Shortcut>)> func);
 	void onSubitems(const QString& menu, std::function<void(const QString&)> func);
-	void updateKey(std::shared_ptr<Shortcut> item, int keySequence);
+	void updateKey(std::shared_ptr<Shortcut> item, QKeyCombination keySequence);
 
 	QHash<QString, std::shared_ptr<Shortcut>> m_items;
 	QHash<int, std::shared_ptr<Shortcut>> m_buttons;
 	QMap<std::pair<int, GamepadAxisEvent::Direction>, std::shared_ptr<Shortcut>> m_axes;
-	QHash<int, std::shared_ptr<Shortcut>> m_heldKeys;
+	QHash<QKeyCombination, std::shared_ptr<Shortcut>> m_heldKeys;
 	ActionMapper* m_actions = nullptr;
 	ConfigController* m_config = nullptr;
 	ScriptingController* m_scripting = nullptr;
